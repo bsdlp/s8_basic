@@ -4,16 +4,18 @@
 
 #include <Arduino.h>
 #include "s8_uart.h"
+#include <SoftwareSerial.h>
 
 
 /* BEGIN CONFIGURATION */
 #define DEBUG_BAUDRATE 115200
+#define USE_SOFTWARE_SERIAL  // disable if using hardware serial
 
 #if (defined USE_SOFTWARE_SERIAL || defined ARDUINO_ARCH_RP2040)
-  #define S8_RX_PIN 16         // Rx pin which the S8 Tx pin is attached to (change if it is needed)
-  #define S8_TX_PIN 17         // Tx pin which the S8 Rx pin is attached to (change if it is needed)
+  #define S8_RX_PIN 4         // Rx pin which the S8 Tx pin is attached to (change if it is needed default 16)
+  #define S8_TX_PIN 5         // Tx pin which the S8 Rx pin is attached to (change if it is needed default 17)
 #else
-  #define S8_UART_PORT  2     // Change UART port if it is needed
+  #define S8_UART_PORT  2     // Change UART port if it is needed (2 for ESP32, 0 for d1 mini)
 #endif
 /* END CONFIGURATION */
 
