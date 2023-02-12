@@ -4,34 +4,12 @@
 
 #include <Arduino.h>
 #include "s8_uart.h"
-#include <SoftwareSerial.h>
-
+#include <WiFiManager.h>
 
 /* BEGIN CONFIGURATION */
 #define DEBUG_BAUDRATE 115200
-#define USE_SOFTWARE_SERIAL  // disable if using hardware serial
 
-#if (defined USE_SOFTWARE_SERIAL || defined ARDUINO_ARCH_RP2040)
-  #define S8_RX_PIN 4         // Rx pin which the S8 Tx pin is attached to (change if it is needed default 16)
-  #define S8_TX_PIN 5         // Tx pin which the S8 Rx pin is attached to (change if it is needed default 17)
-#else
-  #define S8_UART_PORT  2     // Change UART port if it is needed (2 for ESP32, 0 for d1 mini)
-#endif
-/* END CONFIGURATION */
-
-
-#ifdef USE_SOFTWARE_SERIAL
-  SoftwareSerial S8_serial(S8_RX_PIN, S8_TX_PIN);
-#else
-  #if defined(ARDUINO_ARCH_RP2040)
-    REDIRECT_STDOUT_TO(Serial)    // to use printf (Serial.printf not supported)
-    UART S8_serial(S8_TX_PIN, S8_RX_PIN, NC, NC);
-  #else
-    HardwareSerial S8_serial(S8_UART_PORT);   
-  #endif
-#endif
-
-
+HardwareSerial S8_serial(0);
 S8_UART *sensor_S8;
 S8_sensor sensor;
 
@@ -39,42 +17,45 @@ S8_sensor sensor;
 void setup() {
 
   // Configure serial port, we need it for debug
-  Serial.begin(DEBUG_BAUDRATE);
+  Serial1.begin(DEBUG_BAUDRATE);
+  // set up wifi manager
+  WiFiManager wifiManager;
+  wifiManager.autoConnect();
 
   // Wait port is open or timeout
   int i = 0;
-  while (!Serial && i < 50) {
+  while (!S8_serial.available() && i < 50) {
     delay(10);
     i++;
   }
   
   // First message, we are alive
-  Serial.println("");
-  Serial.println("Init");
+  Serial1.println("");
+  Serial1.println("Init");
 
   // Initialize S8 sensor
   S8_serial.begin(S8_BAUDRATE);
-  Serial.println("baudrate set");
+  Serial1.println("baudrate set");
 
   sensor_S8 = new S8_UART(S8_serial);
-  Serial.println("sensor initialized");
+  Serial1.println("sensor initialized");
 
   // Check if S8 is available
   sensor_S8->get_firmware_version(sensor.firm_version);
   int len = strlen(sensor.firm_version);
   if (len == 0) {
-      Serial.println("SenseAir S8 CO2 sensor not found!");
+      Serial1.println("SenseAir S8 CO2 sensor not found!");
       while (1) { delay(1); };
   }
 
   // Show basic S8 sensor info
-  Serial.println(">>> SenseAir S8 NDIR CO2 sensor <<<");
-  printf("Firmware version: %s\n", sensor.firm_version);
+  Serial1.println(">>> SenseAir S8 NDIR CO2 sensor <<<");
+  Serial1.printf("Firmware version: %s\n", sensor.firm_version);
   sensor.sensor_id = sensor_S8->get_sensor_ID();
-  Serial.print("Sensor ID: 0x"); printIntToHex(sensor.sensor_id, 4); Serial.println("");
+  Serial1.print("Sensor ID: 0x"); printIntToHex(sensor.sensor_id, 4); Serial1.println("");
 
-  Serial.println("Setup done!");
-  Serial.flush();
+  Serial1.println("Setup done!");
+  Serial1.flush();
 }
 
 
@@ -84,7 +65,7 @@ void loop() {
 
   // Get CO2 measure
   sensor.co2 = sensor_S8->get_co2();
-  printf("CO2 value = %d ppm\n", sensor.co2);
+  Serial1.printf("CO2 value = %d ppm\n", sensor.co2);
 
   //Serial.printf("/*%u*/\n", sensor.co2);   // Format to use with Serial Studio program
 
